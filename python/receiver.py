@@ -1,36 +1,41 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-import logging
+from http.server import HTTPServer, BaseHTTPRequestHandler
+import json
+import socket
 
-app = Flask(__name__)
-CORS(app, resources={r"/receive": {"origins": "http://localhost:3000"}})
-
-logging.basicConfig(level=logging.DEBUG)
-
-@app.route('/receive', methods=['POST', 'OPTIONS'])
-def receive_data():
-    app.logger.info(f"Received request: {request.method}")
-    app.logger.info(f"Request headers: {request.headers}")
-    
-    if request.method == 'OPTIONS':
-        return jsonify({"status": "success", "message": "CORS preflight request successful"}), 200
-
-    if request.method == 'POST':
-        app.logger.info(f"Request body: {request.get_data(as_text=True)}")
+class RequestHandler(BaseHTTPRequestHandler):
+    def do_POST(self):
+        content_length = int(self.headers['Content-Length'])
+        post_data = self.rfile.read(content_length)
+        
         try:
-            data = request.json
-            app.logger.info(f"Received data: {data}")
-            return jsonify({"status": "success", "message": "Data received by Python server"})
-        except Exception as e:
-            app.logger.error(f"Error processing request: {str(e)}")
-            return jsonify({"status": "error", "message": "Error processing request"}), 400
-    else:
-        return jsonify({"status": "error", "message": "Method not allowed"}), 405
+            json_data = json.loads(post_data.decode('utf-8'))
+            print("Received JSON message:", json_data)
+            
+            self.send_response(200)
+            self.send_header('Content-type', 'text/plain')
+            self.end_headers()
+            self.wfile.write(b"Message received successfully")
+        except json.JSONDecodeError:
+            print("Error: Invalid JSON received")
+            self.send_response(400)
+            self.send_header('Content-type', 'text/plain')
+            self.end_headers()
+            self.wfile.write(b"Error: Invalid JSON")
 
-@app.errorhandler(405)
-def method_not_allowed(error):
-    app.logger.error(f"Method not allowed: {request.method}")
-    return jsonify({"status": "error", "message": "Method not allowed"}), 405
+def run_server(port=8000):
+    server_address = ('', port)
+    while True:
+        try:
+            httpd = HTTPServer(server_address, RequestHandler)
+            print(f"Python server running on port {port}")
+            httpd.serve_forever()
+        except OSError as e:
+            if e.errno == 48:  # Address already in use
+                print(f"Port {port} is already in use. Trying the next port...")
+                port += 1
+                server_address = ('', port)
+            else:
+                raise  # Re-raise the exception if it's not about the address being in use
 
 if __name__ == '__main__':
-    app.run(port=5000, debug=True)
+    run_server()
