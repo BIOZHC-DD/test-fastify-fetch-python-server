@@ -1,4 +1,4 @@
-first create the environment for the running flask python server
+first create the environment for the running flask python server (in the terminal)
 
 ```
 python3 -m venv path/to/venv
