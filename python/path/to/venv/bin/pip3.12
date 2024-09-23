@@ -1,4 +1,4 @@
-#!/Users/blouse_man/Downloads/coding/ihub/mindmind/python/path/to/venv/bin/python3.12
+#!/Users/blouse_man/Downloads/coding/ihub/mindmind/test-fastify-fetch-python-server/python/path/to/venv/bin/python3.12
 # -*- coding: utf-8 -*-
 import re
 import sys
